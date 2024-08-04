@@ -3,22 +3,17 @@ package ca.ucalgary.edu.ensf380;
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 public class TrainStationManager {
-    private final Map<String, List<TrainData>> trainPositions;
-    private final Map<String, String> stationCodeToName;
+    private final Map<String, TrainData> trainDataMap = new HashMap<>();
+    private final Map<String, Station> stations = new HashMap<>();
     private final String outputDirectory = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\out";
-    private final String simulatorPath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\exe\\SubwaySimulator.jar";
-    private final String subwayFilePath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\data\\subway.csv";
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private Process simulatorProcess;
+    private final String subwayFilePath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Map.csv";
+    @SuppressWarnings("unused")
+	private final String targetTrain = "1"; // Hardcoded for example purposes
 
     public TrainStationManager() {
-        this.trainPositions = new HashMap<>();
-        this.stationCodeToName = new HashMap<>();
         loadStationData();
-        startSimulator();
         monitorOutputFiles();
     }
 
@@ -29,25 +24,21 @@ public class TrainStationManager {
             while ((line = br.readLine()) != null) {
                 if (firstLine) {
                     firstLine = false;
-                    continue; // Skip the header line
+                    continue; // Skip header
                 }
                 String[] parts = line.split(",");
-                if (parts.length >= 8) {
+                if (parts.length >= 7) {
+                    String lineCode = parts[1].trim();
                     String stationCode = parts[3].trim();
                     String stationName = parts[4].trim();
+                    double x = Double.parseDouble(parts[5].trim());
+                    double y = Double.parseDouble(parts[6].trim());
+                    String commonStations = parts.length == 8 ? parts[7].trim() : "";
 
-                    stationCodeToName.put(stationCode, stationName);
+                    Station station = new Station(stationCode, stationName, x, y, lineCode, commonStations);
+                    stations.put(stationCode, station);
                 }
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void startSimulator() {
-        try {
-            ProcessBuilder pb = new ProcessBuilder("java", "-jar", simulatorPath, "--in", subwayFilePath, "--out", outputDirectory);
-            simulatorProcess = pb.start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -63,20 +54,26 @@ public class TrainStationManager {
                     }
                 }
                 if (latestFile != null) {
-                    updateTrainPositions(latestFile);
+                    updateTrainData(latestFile);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         };
-        scheduler.scheduleWithFixedDelay(task, 0, 15, TimeUnit.SECONDS);
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                task.run();
+            }
+        }, 0, 15000);
     }
 
-    private void updateTrainPositions(Path filePath) {
+    private void updateTrainData(Path filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath.toFile()))) {
             String line;
-            Map<String, List<TrainData>> newPositions = new HashMap<>();
+            trainDataMap.clear();
             while ((line = br.readLine()) != null) {
+                if (line.startsWith("LineName")) continue; // Skip header
                 String[] parts = line.split(",");
                 if (parts.length >= 5) {
                     String lineColor = parts[0].trim();
@@ -85,66 +82,79 @@ public class TrainStationManager {
                     String direction = parts[3].trim();
                     String destination = parts[4].trim();
 
-                    String stationName = stationCodeToName.getOrDefault(stationCode, stationCode);
-                    String destinationName = stationCodeToName.getOrDefault(destination, destination);
-
-                    newPositions.putIfAbsent(lineColor, new ArrayList<>());
-
-                    TrainData data = new TrainData(trainNumber, stationName, direction, destinationName);
-                    newPositions.get(lineColor).add(data);
+                    Station station = stations.get(stationCode);
+                    if (station != null) {
+                        TrainData trainData = new TrainData(trainNumber, station, direction, destination, lineColor);
+                        trainData.updateNextStations(stations);
+                        trainDataMap.put(trainNumber, trainData);
+                    }
                 }
             }
-            synchronized (trainPositions) {
-                trainPositions.clear();
-                trainPositions.putAll(newPositions);
-            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public List<TrainData> getTrainPositions(String lineColor) {
-        synchronized (trainPositions) {
-            return trainPositions.getOrDefault(lineColor, new ArrayList<>());
-        }
+    public TrainData getTrainData(String trainNumber) {
+        return trainDataMap.get(trainNumber);
     }
 
-    public void shutdown() {
-        scheduler.shutdown();
-        try {
-            if (simulatorProcess != null) {
-                simulatorProcess.destroy();
-            }
-            Files.walk(Paths.get(outputDirectory))
-                    .filter(Files::isRegularFile)
-                    .map(Path::toFile)
-                    .forEach(File::delete);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public Collection<TrainData> getAllTrainData() {
+        return trainDataMap.values();
     }
 
     public static class TrainData {
         private final String trainNumber;
-        private final String stationName;
+        private final Station station;
         private final String direction;
         private final String destination;
-        private final List<String> commonStations;
+        private final String lineColor;
+        private List<String> nextStations;
 
-        public TrainData(String trainNumber, String stationName, String direction, String destination) {
+        public TrainData(String trainNumber, Station station, String direction, String destination, String lineColor) {
             this.trainNumber = trainNumber;
-            this.stationName = stationName;
+            this.station = station;
             this.direction = direction;
             this.destination = destination;
-            this.commonStations = new ArrayList<>();
+            this.lineColor = lineColor;
+            this.nextStations = new ArrayList<>();
+        }
+
+        public void updateNextStations(Map<String, Station> stations) {
+            List<Station> allStations = new ArrayList<>();
+            for (Station st : stations.values()) {
+                if (st.getLineCode().equals(this.lineColor)) {
+                    allStations.add(st);
+                }
+            }
+            allStations.sort(Comparator.comparing(Station::getStationCode));
+
+            int currentIndex = -1;
+            for (int i = 0; i < allStations.size(); i++) {
+                if (allStations.get(i).getStationCode().equals(this.station.getStationCode())) {
+                    currentIndex = i;
+                    break;
+                }
+            }
+
+            nextStations.clear();
+            if (currentIndex != -1) {
+                for (int i = 1; i <= 3; i++) {
+                    if (currentIndex + i < allStations.size()) {
+                        nextStations.add(allStations.get(currentIndex + i).getStationName());
+                    } else {
+                        nextStations.add("End of Line");
+                    }
+                }
+            }
         }
 
         public String getTrainNumber() {
             return trainNumber;
         }
 
-        public String getStationName() {
-            return stationName;
+        public Station getStation() {
+            return station;
         }
 
         public String getDirection() {
@@ -155,31 +165,57 @@ public class TrainStationManager {
             return destination;
         }
 
-        public void addCommonStation(String station) {
-            commonStations.add(station);
+        public String getLineColor() {
+            return lineColor;
         }
 
-        public List<String> getCommonStations() {
+        public List<String> getNextStations() {
+            return nextStations;
+        }
+    }
+
+    public static class Station {
+        private final String stationCode;
+        private final String stationName;
+        private final double x;
+        private final double y;
+        private final String lineCode;
+        private final String commonStations;
+
+        public Station(String stationCode, String stationName, double x, double y, String lineCode, String commonStations) {
+            this.stationCode = stationCode;
+            this.stationName = stationName;
+            this.x = x;
+            this.y = y;
+            this.lineCode = lineCode;
+            this.commonStations = commonStations;
+        }
+
+        public String getStationCode() {
+            return stationCode;
+        }
+
+        public String getStationName() {
+            return stationName;
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public double getY() {
+            return y;
+        }
+
+        public String getLineCode() {
+            return lineCode;
+        }
+
+        public String getCommonStations() {
             return commonStations;
-        }
-
-        public List<String> getSurroundingStations() {
-            // Mock method to get the previous, current, and next stations for a train
-            // Replace this with the actual logic to get the correct stations based on train data
-            return Arrays.asList("PrevStation", stationName, "NextStation1", "NextStation2", "NextStation3");
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
 
 
 
