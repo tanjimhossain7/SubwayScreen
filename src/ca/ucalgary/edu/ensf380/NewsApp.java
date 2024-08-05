@@ -1,4 +1,4 @@
-
+package ca.ucalgary.edu.ensf380;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -10,7 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class NewsApp {
-    private static final String API_KEY = "3BbUZoh-7fAr5m3wSxWbtRB-2yP6mVUD2DptrUWXC2FQcrWV";
+    private static final String API_KEY = "your_api_key_here";
     private static final String BASE_URL = "https://api.currentsapi.services/v1/search";
 
     public static void main(String[] args) {
@@ -37,23 +37,13 @@ public class NewsApp {
         String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
         String urlStr = BASE_URL + "?keywords=" + encodedQuery + "&apiKey=" + API_KEY;
 
-        // Print the request URL for debugging
-        System.out.println("Request URL: " + urlStr);
-
         URI uri = URI.create(urlStr);
         HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
         conn.setRequestMethod("GET");
 
         int responseCode = conn.getResponseCode();
         if (responseCode != 200) {
-            BufferedReader errorReader = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-            StringBuilder errorResponse = new StringBuilder();
-            String line;
-            while ((line = errorReader.readLine()) != null) {
-                errorResponse.append(line);
-            }
-            errorReader.close();
-            throw new RuntimeException("Failed : HTTP error code : " + responseCode + "\nError response: " + errorResponse.toString());
+            throw new RuntimeException("Failed : HTTP error code : " + responseCode);
         }
 
         BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -65,18 +55,9 @@ public class NewsApp {
 
         conn.disconnect();
 
-        // Print raw response for debugging
-        System.out.println("Raw API Response: " + response.toString());
-
         JSONObject jsonResponse = new JSONObject(response.toString());
         JSONArray newsArray = jsonResponse.getJSONArray("news");
 
-        // Check if any articles were found
-        if (newsArray.length() == 0) {
-            System.out.println("No articles found for the query: " + query);
-            return new String[0]; // Return an empty array
-        }
-        
         String[] articles = new String[newsArray.length()];
         for (int i = 0; i < newsArray.length(); i++) {
             JSONObject article = newsArray.getJSONObject(i);
@@ -89,7 +70,6 @@ public class NewsApp {
 
         return articles;
     }
-
 
     private static void displayNews(String[] articles) throws InterruptedException {
         System.out.println("Displaying " + articles.length + " articles");
@@ -111,7 +91,6 @@ public class NewsApp {
                 System.out.flush();
             }
         } catch (Exception e) {
-            // If console clearing fails, just print some newlines
             for (int i = 0; i < 50; i++) System.out.println();
         }
     }

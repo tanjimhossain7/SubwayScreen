@@ -1,25 +1,27 @@
-package cityhallads;
+package ca.ucalgary.edu.ensf380;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.sql.SQLException;
-import java.util.ArrayList;
+import java.sql.*;
+import java.util.*;
 import java.util.List;
 import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import javax.imageio.ImageIO;
 
 public class CityHallAds {
     private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
+    private static final String TARGET_TRAIN = "1"; // Hardcoded target train
+    private static TrainStationManager stationManager;
 
     public static void main(String[] args) {
+        stationManager = new TrainStationManager();
+
         initializeDatabase();
         insertSampleData();
-        
+
         List<Advertisement> ads = fetchAdvertisements();
-        
+
         if (ads.isEmpty()) {
             System.out.println("No advertisements found in the database.");
             return;
@@ -27,12 +29,18 @@ public class CityHallAds {
 
         JFrame frame = new JFrame("City Hall Advertisements");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(800, 500);
 
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new BorderLayout());
         JLabel label = new JLabel();
-        panel.add(label);
-        frame.add(panel);
+        label.setHorizontalAlignment(JLabel.CENTER);
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new GridLayout(1, 1)); // Adjust layout to match the hardcoded train output
+
+        panel.add(label, BorderLayout.CENTER);
+        frame.setLayout(new BorderLayout());
+        frame.add(panel, BorderLayout.CENTER);
+        frame.add(infoPanel, BorderLayout.SOUTH);
         frame.setVisible(true);
 
         int index = 0;
@@ -41,7 +49,7 @@ public class CityHallAds {
                 Advertisement ad = ads.get(index);
                 displayAdvertisement(label, ad);
                 Thread.sleep(10000); // Show each ad for 10 seconds
-                displayMap(label);
+                displayMapAndTrainInfo(label, infoPanel);
                 Thread.sleep(5000); // Show map for 5 seconds
                 index = (index + 1) % ads.size();
             } catch (InterruptedException e) {
@@ -57,7 +65,7 @@ public class CityHallAds {
                 "description TEXT," +
                 "media_id INTEGER," +
                 "display_order INTEGER)";
-        
+
         String createMediaFilesTable = "CREATE TABLE IF NOT EXISTS MediaFiles (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "file_name TEXT NOT NULL," +
@@ -66,11 +74,11 @@ public class CityHallAds {
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement()) {
-            
+
             stmt.execute(createAdvertisementsTable);
             stmt.execute(createMediaFilesTable);
             System.out.println("Database initialized successfully.");
-            
+
         } catch (SQLException e) {
             System.out.println("Database initialization failed!");
             e.printStackTrace();
@@ -112,12 +120,12 @@ public class CityHallAds {
             // Load the SQLite JDBC driver
             Class.forName("org.sqlite.JDBC");
             System.out.println("SQLite JDBC Driver Registered!");
-            
+
             try (Connection conn = DriverManager.getConnection(DB_URL);
                  Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT a.id, a.title, a.description, m.file_name, m.file_type, m.file_path " +
                          "FROM Advertisements a JOIN MediaFiles m ON a.media_id = m.id ORDER BY a.display_order")) {
-                
+
                 System.out.println("Database connection established");
                 while (rs.next()) {
                     Advertisement ad = new Advertisement(
@@ -145,7 +153,7 @@ public class CityHallAds {
         System.out.println("Total advertisements fetched: " + ads.size());
         return ads;
     }
-    
+
     private static void displayAdvertisement(JLabel label, Advertisement ad) {
         String filePath = ad.getFilePath();
         String fileType = ad.getFileType();
@@ -164,31 +172,93 @@ public class CityHallAds {
         label.setText("<html><h1>" + ad.getTitle() + "</h1><p>" + ad.getDescription() + "</p></html>");
     }
 
-    private static void displayMap(JLabel label) {
-        List<File> mapImages = getMapImages();
-        if (!mapImages.isEmpty()) {
-            // Randomly select an image from the list
-            File randomImage = mapImages.get((int) (Math.random() * mapImages.size()));
-            label.setIcon(new ImageIcon(randomImage.getPath()));
-            label.setText("<html><h1>Train Positions</h1></html>");
-        } else {
-            label.setIcon(null);
-            label.setText("<html><h1>Train Positions</h1><p>No map images found</p></html>");
+    private static void displayMapAndTrainInfo(JLabel label, JPanel infoPanel) {
+        BufferedImage mapImage;
+        try {
+            mapImage = ImageIO.read(new File("C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Trains.png"));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+
+        Graphics2D g2d = mapImage.createGraphics();
+        g2d.setColor(Color.GRAY);
+
+        for (TrainStationManager.TrainData data : stationManager.getAllTrainData()) {
+            int x = (int) data.getStation().getX();
+            int y = (int) data.getStation().getY();
+            g2d.fillOval(x, y, 10, 10); // Draw grey dot for each train
+
+            if (TARGET_TRAIN.equals(data.getTrainNumber())) {
+                g2d.setColor(Color.GREEN); // Green dot for target train
+                g2d.fillOval(x, y, 10, 10);
+                g2d.setColor(Color.GRAY); // Reset color for other trains
+            }
+        }
+
+        // Add the legend
+        int legendX = 20;
+        int legendY = mapImage.getHeight() - 100;
+        g2d.setColor(Color.BLACK);
+        g2d.drawString("Legend:", legendX, legendY);
+        g2d.setColor(Color.RED);
+        g2d.fillRect(legendX, legendY + 10, 10, 10);
+        g2d.drawString("Red Line", legendX + 15, legendY + 20);
+        g2d.setColor(Color.BLUE);
+        g2d.fillRect(legendX, legendY + 30, 10, 10);
+        g2d.drawString("Blue Line", legendX + 15, legendY + 40);
+        g2d.setColor(Color.GREEN);
+        g2d.fillRect(legendX, legendY + 50, 10, 10);
+        g2d.drawString("Green Line", legendX + 15, legendY + 60);
+
+        g2d.dispose();
+        label.setIcon(new ImageIcon(mapImage));
+
+        // Display the train information for the hardcoded train
+        TrainStationManager.TrainData targetData = stationManager.getTrainData(TARGET_TRAIN);
+        if (targetData != null) {
+            infoPanel.removeAll();
+            JPanel trainInfoPanel = new JPanel();
+            trainInfoPanel.setLayout(new GridLayout(1, 4));
+
+            List<String> nextStations = targetData.getNextStations();
+            JLabel prevStationLabel = new JLabel("<html><div style='padding: 10px;'>Prev: " + nextStations.get(0) + "</div></html>", JLabel.CENTER);
+            JLabel currentStationLabel = new JLabel("<html><div style='padding: 10px;'>Current: <span style='background-color:" + getLineColorHex(targetData.getLineColor()) + "'>" 
+                                                    + targetData.getStation().getStationName() + "</span></div></html>", JLabel.CENTER);
+            currentStationLabel.setOpaque(true);
+            JLabel nextStationLabel = new JLabel("<html><div style='padding: 10px;'>Next: " + nextStations.get(1) + "</div></html>", JLabel.CENTER);
+            JLabel afterNextStationLabel = new JLabel("<html><div style='padding: 10px;'>After Next: " + nextStations.get(2) + "</div></html>", JLabel.CENTER);
+
+            // Add the station information to the train info panel
+            trainInfoPanel.add(prevStationLabel);
+            trainInfoPanel.add(currentStationLabel);
+            trainInfoPanel.add(nextStationLabel);
+            trainInfoPanel.add(afterNextStationLabel);
+
+            // Create a panel for announcements
+            JPanel announcementPanel = new JPanel(new GridLayout(1, 1));
+            JLabel announcementLabel = new JLabel("<html><div style='padding: 10px;'>Next Station: " + targetData.getStation().getStationName() + "</div></html>", JLabel.CENTER);
+            announcementPanel.add(announcementLabel);
+
+            // Add the train info panel and the announcement panel to the info panel
+            infoPanel.add(trainInfoPanel);
+            infoPanel.add(announcementPanel);
+
+            infoPanel.revalidate();
+            infoPanel.repaint();
         }
     }
 
-    private static List<File> getMapImages() {
-        List<File> mapImages = new ArrayList<>();
-        File mapFolder = new File("Map");
-        if (mapFolder.exists() && mapFolder.isDirectory()) {
-            File[] files = mapFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
-            if (files != null) {
-                for (File file : files) {
-                    mapImages.add(file);
-                }
-            }
+    private static String getLineColorHex(String lineColor) {
+        switch (lineColor) {
+            case "R":
+                return "#FF0000"; // Red
+            case "B":
+                return "#0000FF"; // Blue
+            case "G":
+                return "#00FF00"; // Green
+            default:
+                return "#000000"; // Black
         }
-        System.out.println("Found " + mapImages.size() + " map images");
-        return mapImages;
     }
 }
