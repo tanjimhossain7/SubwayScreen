@@ -9,8 +9,6 @@ public class TrainStationManager {
     private final Map<String, Station> stations = new HashMap<>();
     private final String outputDirectory = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\out";
     private final String subwayFilePath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Map.csv";
-    @SuppressWarnings("unused")
-	private final String targetTrain = "1"; // Hardcoded for example purposes
 
     public TrainStationManager() {
         loadStationData();
@@ -85,7 +83,7 @@ public class TrainStationManager {
                     Station station = stations.get(stationCode);
                     if (station != null) {
                         TrainData trainData = new TrainData(trainNumber, station, direction, destination, lineColor);
-                        trainData.updateNextStations(stations);
+                        trainData.updateNextStations(stations, direction);
                         trainDataMap.put(trainNumber, trainData);
                     }
                 }
@@ -120,7 +118,7 @@ public class TrainStationManager {
             this.nextStations = new ArrayList<>();
         }
 
-        public void updateNextStations(Map<String, Station> stations) {
+        public void updateNextStations(Map<String, Station> stations, String direction) {
             List<Station> allStations = new ArrayList<>();
             for (Station st : stations.values()) {
                 if (st.getLineCode().equals(this.lineColor)) {
@@ -139,11 +137,23 @@ public class TrainStationManager {
 
             nextStations.clear();
             if (currentIndex != -1) {
-                for (int i = 1; i <= 3; i++) {
-                    if (currentIndex + i < allStations.size()) {
-                        nextStations.add(allStations.get(currentIndex + i).getStationName());
-                    } else {
-                        nextStations.add("End of Line");
+                if ("forward".equals(direction)) {
+                    // Ensure that we collect the next three stations if available
+                    for (int i = 1; i <= 4; i++) {
+                        if (currentIndex + i < allStations.size()) {
+                            nextStations.add(allStations.get(currentIndex + i).getStationName());
+                        } else {
+                            nextStations.add("End of Line");
+                        }
+                    }
+                } else {
+                    // Ensure that we collect the previous three stations if available
+                    for (int i = 1; i <= 4; i++) {
+                        if (currentIndex - i >= 0) {
+                            nextStations.add(allStations.get(currentIndex - i).getStationName());
+                        } else {
+                            nextStations.add("Start of Line");
+                        }
                     }
                 }
             }
@@ -216,6 +226,8 @@ public class TrainStationManager {
         }
     }
 }
+
+
 
 
 

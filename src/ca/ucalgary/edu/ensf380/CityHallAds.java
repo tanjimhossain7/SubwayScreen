@@ -3,18 +3,42 @@ package ca.ucalgary.edu.ensf380;
 import java.sql.*;
 import java.util.*;
 import java.util.List;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+
 import javax.imageio.ImageIO;
 
 public class CityHallAds {
-    private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
-    private static final String TARGET_TRAIN = "1"; // Hardcoded target train
+	private static final String DB_URL = "jdbc:sqlite:C:/Users/saimk/OneDrive/Desktop/SubwayScreen/CityHallAds.db";
     private static TrainStationManager stationManager;
+    private static final String TARGET_TRAIN = "1"; // or whichever value you need
 
     public static void main(String[] args) {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        
+     // Start the simulator
+        try {
+            ProcessBuilder pb = new ProcessBuilder("java", "-jar", "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\exe\\SubwaySimulator.jar --in \"..\\data\\subway.csv\" --out \"..\\out");
+            pb.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+        stationManager = new TrainStationManager();
+
+        initializeDatabase();
+        insertSampleData();
+
         stationManager = new TrainStationManager();
 
         initializeDatabase();
@@ -157,8 +181,10 @@ public class CityHallAds {
     private static void displayAdvertisement(JLabel label, Advertisement ad) {
         String filePath = ad.getFilePath();
         String fileType = ad.getFileType();
-        switch (fileType) {
+        switch (fileType.toUpperCase()) {
             case "JPEG":
+            case "JPG":
+            case "PNG":
             case "BMP":
                 label.setIcon(new ImageIcon(filePath));
                 break;
@@ -169,7 +195,6 @@ public class CityHallAds {
                 // Handle MPG display
                 break;
         }
-        label.setText("<html><h1>" + ad.getTitle() + "</h1><p>" + ad.getDescription() + "</p></html>");
     }
 
     private static void displayMapAndTrainInfo(JLabel label, JPanel infoPanel) {
@@ -227,17 +252,19 @@ public class CityHallAds {
                                                     + targetData.getStation().getStationName() + "</span></div></html>", JLabel.CENTER);
             currentStationLabel.setOpaque(true);
             JLabel nextStationLabel = new JLabel("<html><div style='padding: 10px;'>Next: " + nextStations.get(1) + "</div></html>", JLabel.CENTER);
-            JLabel afterNextStationLabel = new JLabel("<html><div style='padding: 10px;'>After Next: " + nextStations.get(2) + "</div></html>", JLabel.CENTER);
+            JLabel afterNextStationLabel = new JLabel("<html><div style='padding: 10px;'>Second: " + nextStations.get(2) + "</div></html>", JLabel.CENTER);
+            JLabel ThirdStationLabel = new JLabel("<html><div style='padding: 10px;'>Third: " + nextStations.get(3) + "</div></html>", JLabel.CENTER);
 
             // Add the station information to the train info panel
             trainInfoPanel.add(prevStationLabel);
             trainInfoPanel.add(currentStationLabel);
             trainInfoPanel.add(nextStationLabel);
             trainInfoPanel.add(afterNextStationLabel);
+            trainInfoPanel.add(ThirdStationLabel);
 
-            // Create a panel for announcements
+         // Create a panel for announcements
             JPanel announcementPanel = new JPanel(new GridLayout(1, 1));
-            JLabel announcementLabel = new JLabel("<html><div style='padding: 10px;'>Next Station: " + targetData.getStation().getStationName() + "</div></html>", JLabel.CENTER);
+            JLabel announcementLabel = new JLabel("<html><div style='padding: 10px;'>Next Station: " + nextStations.get(1) + "</div></html>", JLabel.CENTER);
             announcementPanel.add(announcementLabel);
 
             // Add the train info panel and the announcement panel to the info panel
