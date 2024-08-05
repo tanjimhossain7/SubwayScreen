@@ -27,20 +27,15 @@ public class FinalGUI {
 
             // Main panels
             JPanel topPanel = new JPanel(new GridLayout(1, 2));
-            JPanel bottomPanel = new JPanel(new GridLayout(2, 1));
+            JPanel middlePanel = new JPanel(new BorderLayout());
+            JPanel bottomPanel = new JPanel(new BorderLayout());
 
             // Add the top and bottom panels to the frame
             frame.add(topPanel, BorderLayout.NORTH);
-            frame.add(bottomPanel, BorderLayout.CENTER);
+            frame.add(middlePanel, BorderLayout.CENTER);
+            frame.add(bottomPanel, BorderLayout.SOUTH);
 
-            // Time panel (Right Side of Top Panel)
-            JPanel weatherTimePanel = new JPanel(new GridLayout(2, 1));
-            JLabel timeLabel = new JLabel("Loading time...", SwingConstants.CENTER);
-            timeLabel.setFont(new Font("Serif", Font.BOLD, 24));
-            weatherTimePanel.add(timeLabel);
-            topPanel.add(weatherTimePanel);
-
-            // Ads and Map panel
+            // Left side of top panel (Map and Ads)
             JPanel adsMapPanel = new JPanel(new BorderLayout());
             JLabel adLabel = new JLabel("", SwingConstants.CENTER);
             adLabel.setFont(new Font("Serif", Font.BOLD, 24));
@@ -48,20 +43,45 @@ public class FinalGUI {
 
             JLabel mapLabel = new JLabel("", SwingConstants.CENTER);
             adsMapPanel.add(mapLabel, BorderLayout.CENTER);
-            bottomPanel.add(adsMapPanel);
+            topPanel.add(adsMapPanel);
 
-            // Train info panel
+            // Right side of top panel (Time and Weather)
+            JPanel weatherTimePanel = new JPanel(new GridLayout(2, 1));
+            JLabel timeLabel = new JLabel("Loading time...", SwingConstants.CENTER);
+            timeLabel.setFont(new Font("Serif", Font.BOLD, 24));
+            weatherTimePanel.add(timeLabel);
+
+            JLabel weatherLabel = new JLabel("Loading weather...", SwingConstants.CENTER);
+            weatherLabel.setFont(new Font("Serif", Font.BOLD, 18));
+            weatherTimePanel.add(weatherLabel);
+            topPanel.add(weatherTimePanel);
+
+            // Middle panel (News)
+            JPanel newsPanel = new JPanel(new BorderLayout());
+            JLabel newsLabel = new JLabel("Loading news...", SwingConstants.CENTER);
+            newsLabel.setFont(new Font("Serif", Font.PLAIN, 16));
+            newsPanel.add(newsLabel, BorderLayout.CENTER);
+            middlePanel.add(newsPanel);
+
+            // Bottom panel (Train Info)
             JPanel trainInfoPanel = new JPanel(new GridLayout(1, 1));
             JLabel trainInfoLabel = new JLabel("Loading train data...", SwingConstants.CENTER);
             trainInfoLabel.setFont(new Font("Serif", Font.PLAIN, 18));
             trainInfoPanel.add(trainInfoLabel);
-            bottomPanel.add(trainInfoPanel);
+            bottomPanel.add(trainInfoPanel, BorderLayout.NORTH);
+
+            // Announcement section under the train information
+            JPanel announcementPanel = new JPanel(new BorderLayout());
+            JLabel announcementLabel = new JLabel("Next Stop: Loading...", SwingConstants.CENTER);
+            announcementLabel.setFont(new Font("Serif", Font.BOLD, 18));
+            announcementPanel.add(announcementLabel, BorderLayout.CENTER);
+            bottomPanel.add(announcementPanel, BorderLayout.SOUTH);
 
             frame.setVisible(true);
 
             // Start fetching data
             updateTime(timeLabel);
-            startAdDisplay(adLabel, mapLabel, trainInfoLabel);
+            startAdDisplay(adLabel, mapLabel, trainInfoLabel, announcementLabel);
         });
     }
 
@@ -85,7 +105,7 @@ public class FinalGUI {
         }, 0, 1000); // Update every second
     }
 
-    private static void startAdDisplay(JLabel adLabel, JLabel mapLabel, JLabel trainInfoLabel) {
+    private static void startAdDisplay(JLabel adLabel, JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         stationManager = new TrainStationManager();
         CityHallAds cityHallAds = new CityHallAds();
         List<Advertisement> ads = cityHallAds.fetchAdvertisements();
@@ -93,23 +113,21 @@ public class FinalGUI {
         Timer adTimer = new Timer();
         adTimer.scheduleAtFixedRate(new TimerTask() {
             int adIndex = 0;
+            boolean showingAd = true;
 
             @Override
             public void run() {
-                if (ads != null && !ads.isEmpty()) {
-                    displayAdvertisement(adLabel, ads.get(adIndex));
-                    adIndex = (adIndex + 1) % ads.size();
+                if (showingAd) {
+                    if (ads != null && !ads.isEmpty()) {
+                        displayAdvertisement(adLabel, ads.get(adIndex));
+                        adIndex = (adIndex + 1) % ads.size();
+                    }
+                } else {
+                    displayMapAndTrainInfo(mapLabel, trainInfoLabel, announcementLabel);
                 }
+                showingAd = !showingAd; // Toggle between ad and map
             }
-        }, 0, 10000); // Switch ad every 10 seconds
-
-        Timer mapTimer = new Timer();
-        mapTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                displayMapAndTrainInfo(mapLabel, trainInfoLabel);
-            }
-        }, 5000, 15000); // Display map 5 seconds after ad, every 15 seconds
+        }, 0, 5000); // Switch between ad and map every 5 seconds
     }
 
     private static void displayAdvertisement(JLabel label, Advertisement ad) {
@@ -135,7 +153,7 @@ public class FinalGUI {
         }
     }
 
-    private static void displayMapAndTrainInfo(JLabel mapLabel, JLabel trainInfoLabel) {
+    private static void displayMapAndTrainInfo(JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         BufferedImage mapImage;
         try {
             mapImage = ImageIO.read(new File("C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Trains.png"));
@@ -167,14 +185,28 @@ public class FinalGUI {
         if (targetData != null) {
             List<String> nextStations = targetData.getNextStations();
             StringBuilder infoText = new StringBuilder("<html>");
-            infoText.append("Prev: ").append(nextStations.get(0)).append("<br>");
-            infoText.append("Current: ").append(targetData.getStation().getStationName()).append("<br>");
-            infoText.append("Next: ").append(nextStations.get(1)).append("<br>");
-            infoText.append("Second: ").append(nextStations.get(2)).append("<br>");
-            infoText.append("Third: ").append(nextStations.get(3)).append("<br>");
-            infoText.append("</html>");
+            infoText.append("Prev: ").append(nextStations.get(0)).append(" ");
+            infoText.append("Current: <span style='background-color:").append(getLineColorHex(targetData.getLineColor())).append(";'>")
+                    .append(targetData.getStation().getStationName()).append("</span> ");
+            infoText.append("Next: ").append(nextStations.get(1)).append(" ");
+            infoText.append("Second: ").append(nextStations.get(2)).append(" ");
+            infoText.append("Third: ").append(nextStations.get(3)).append("</html>");
 
             trainInfoLabel.setText(infoText.toString());
+            announcementLabel.setText("Next Stop: " + nextStations.get(1));
+        }
+    }
+
+    private static String getLineColorHex(String lineColor) {
+        switch (lineColor) {
+            case "R":
+                return "#FF0000"; // Red
+            case "B":
+                return "#0000FF"; // Blue
+            case "G":
+                return "#00FF00"; // Green
+            default:
+                return "#000000"; // Black
         }
     }
 }
