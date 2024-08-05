@@ -3,12 +3,19 @@ package ca.ucalgary.edu.ensf380;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import javax.imageio.ImageIO;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 
 public class FinalGUI {
     private static final String TARGET_TRAIN = "1"; // or whichever value you need
@@ -81,9 +88,52 @@ public class FinalGUI {
 
             // Start fetching data
             updateTime(timeLabel);
+            updateWeather(weatherLabel);
             startAdDisplay(adLabel, mapLabel, trainInfoLabel, announcementLabel);
         });
     }
+
+    private static void updateWeather(JLabel weatherLabel) {
+        Timer weatherTimer = new Timer();
+        weatherTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                String weatherData = fetchWeatherData("Calgary");
+                SwingUtilities.invokeLater(() -> weatherLabel.setText("<html>" + weatherData.replace("\n", "<br>") + "</html>"));
+            }
+        }, 0, 3600000); // Refresh every hour
+    }
+
+    private static String fetchWeatherData(String location) {
+        try {
+            // Define the detailed format string for the weather information
+            String formatString = "Weather: %C | Temperature: %t | Wind: %w | Humidity: %h | Precipitation: %p | Pressure: %P";
+            
+            // URL encode the format string to ensure it's safe for URL usage
+            String encodedFormat = URLEncoder.encode(formatString, StandardCharsets.UTF_8.toString());
+            
+            // Construct the URL with the encoded format string
+            URL url = new URL("https://wttr.in/" + location + "?format=" + encodedFormat);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setFollowRedirects(true);
+
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line).append("\n");
+                }
+            } finally {
+                connection.disconnect();
+            }
+            return response.toString();
+        } catch (Exception e) {
+            e.printStackTrace();  // Print the full stack trace to understand the specific cause of the error
+            return "Failed to fetch weather data. Error: " + e.getMessage();
+        }
+    }
+
 
     private static void startSimulator() {
         try {
@@ -93,6 +143,10 @@ public class FinalGUI {
             e.printStackTrace();
         }
     }
+
+    // Other methods for time update, ad display, etc.
+
+
 
     private static void updateTime(JLabel timeLabel) {
         Timer timer = new Timer();
