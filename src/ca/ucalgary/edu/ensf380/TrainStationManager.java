@@ -53,6 +53,7 @@ public class TrainStationManager {
                 }
                 if (latestFile != null) {
                     updateTrainData(latestFile);
+                    deleteOutputFiles(); // Delete files after processing the first one
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -87,6 +88,16 @@ public class TrainStationManager {
                         trainDataMap.put(trainNumber, trainData);
                     }
                 }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteOutputFiles() {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(outputDirectory), "*.csv")) {
+            for (Path entry : stream) {
+                Files.delete(entry);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -138,8 +149,8 @@ public class TrainStationManager {
             nextStations.clear();
             if (currentIndex != -1) {
                 if ("forward".equals(direction)) {
-                    // Collect the next three stations if available
-                    for (int i = 1; i <= 3; i++) {
+                    // Ensure that we collect the next three stations if available
+                    for (int i = 1; i <= 4; i++) {
                         if (currentIndex + i < allStations.size()) {
                             nextStations.add(allStations.get(currentIndex + i).getStationName());
                         } else {
@@ -147,8 +158,8 @@ public class TrainStationManager {
                         }
                     }
                 } else {
-                    // Collect the previous three stations if available
-                    for (int i = 1; i <= 3; i++) {
+                    // Ensure that we collect the previous three stations if available
+                    for (int i = 1; i <= 4; i++) {
                         if (currentIndex - i >= 0) {
                             nextStations.add(allStations.get(currentIndex - i).getStationName());
                         } else {
@@ -226,3 +237,6 @@ public class TrainStationManager {
         }
     }
 }
+
+
+
