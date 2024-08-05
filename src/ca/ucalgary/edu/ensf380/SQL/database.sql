@@ -1,23 +1,17 @@
--- Create the database
-CREATE DATABASE CityHallAds;
-
--- Use the database
-USE CityHallAds;
-
 -- Create the Advertisements table
-CREATE TABLE Advertisements (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+CREATE TABLE IF NOT EXISTS Advertisements (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
     description TEXT,
-    media_id INT,
-    display_order INT,
+    media_id INTEGER,
+    display_order INTEGER,
     FOREIGN KEY (media_id) REFERENCES MediaFiles(id)
 );
 
 -- Create the MediaFiles table
-CREATE TABLE MediaFiles (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    file_name VARCHAR(255) NOT NULL,
-    file_type ENUM('PDF', 'MPG', 'JPEG', 'BMP') NOT NULL,
-    file_path VARCHAR(255) NOT NULL
+CREATE TABLE IF NOT EXISTS MediaFiles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    file_name TEXT NOT NULL,
+    file_type TEXT NOT NULL,
+    file_path TEXT NOT NULL
 );
