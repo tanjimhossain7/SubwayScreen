@@ -138,8 +138,8 @@ public class TrainStationManager {
             nextStations.clear();
             if (currentIndex != -1) {
                 if ("forward".equals(direction)) {
-                    // Ensure that we collect the next three stations if available
-                    for (int i = 1; i <= 4; i++) {
+                    // Collect the next three stations if available
+                    for (int i = 1; i <= 3; i++) {
                         if (currentIndex + i < allStations.size()) {
                             nextStations.add(allStations.get(currentIndex + i).getStationName());
                         } else {
@@ -147,8 +147,8 @@ public class TrainStationManager {
                         }
                     }
                 } else {
-                    // Ensure that we collect the previous three stations if available
-                    for (int i = 1; i <= 4; i++) {
+                    // Collect the previous three stations if available
+                    for (int i = 1; i <= 3; i++) {
                         if (currentIndex - i >= 0) {
                             nextStations.add(allStations.get(currentIndex - i).getStationName());
                         } else {
@@ -226,9 +226,3 @@ public class TrainStationManager {
         }
     }
 }
-
-
-
-
-
-
