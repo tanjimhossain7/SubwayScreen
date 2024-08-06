@@ -1,10 +1,15 @@
 package cityhallads;
 
-import javax.swing.*;
-import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
+import java.io.File;
 
 public class CityHallAds {
     private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
@@ -144,7 +149,7 @@ public class CityHallAds {
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 
-    public static List<Advertisement> fetchAdvertisements() {
+    private static List<Advertisement> fetchAdvertisements() {
         List<Advertisement> ads = new ArrayList<>();
         try {
             // Load the SQLite JDBC driver
@@ -183,8 +188,8 @@ public class CityHallAds {
         System.out.println("Total advertisements fetched: " + ads.size());
         return ads;
     }
-
-    public static void displayAdvertisement(JLabel label, Advertisement ad) {
+    
+    private static void displayAdvertisement(JLabel label, Advertisement ad) {
         String filePath = ad.getFilePath();
         String fileType = ad.getFileType();
         switch (fileType.toUpperCase()) {
@@ -201,23 +206,20 @@ public class CityHallAds {
                 // Handle MPG display
                 break;
         }
-    }
+      }
 
-    public static List<File> getMapImages() {
-        List<File> mapImages = new ArrayList<>();
-        File mapFolder = new File("Map");
-        if (mapFolder.exists() && mapFolder.isDirectory()) {
-            File[] files = mapFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
-            if (files != null) {
-                for (File file : files) {
-                    mapImages.add(file);
-                }
-            }
+    private static void displayMap(JLabel label) {
+        List<File> mapImages = getMapImages();
+        if (!mapImages.isEmpty()) {
+            // Randomly select an image from the list
+            File randomImage = mapImages.get((int) (Math.random() * mapImages.size()));
+            label.setIcon(new ImageIcon(randomImage.getPath()));
+            label.setText("<html><h1>Train Positions</h1></html>");
+        } else {
+            label.setIcon(null);
+            label.setText("<html><h1>Train Positions</h1><p>No map images found</p></html>");
         }
-        System.out.println("Found " + mapImages.size() + " map images");
-        return mapImages;
     }
-
 
     private static List<File> getMapImages() {
         List<File> mapImages = new ArrayList<>();
