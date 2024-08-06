@@ -2,14 +2,15 @@ package ca.ucalgary.edu.ensf380;
 
 /**
  * The Advertisement class represents an advertisement, including its metadata such as title, description, and file path.
+ * This class encapsulates the properties of an advertisement and provides getters and setters to access and modify them.
  */
 public class Advertisement {
-    private int id;
-    private String title;
-    private String description;
-    private String fileName;
-    private String fileType;
-    private String filePath;
+    private int id;  // The unique identifier for the advertisement
+    private String title;  // The title of the advertisement
+    private String description;  // A brief description of the advertisement
+    private String fileName;  // The name of the file containing the advertisement
+    private String fileType;  // The type of the file (e.g., JPEG, PNG)
+    private String filePath;  // The file path where the advertisement is stored
 
     /**
      * Constructs an Advertisement object with the specified parameters.
@@ -19,6 +20,7 @@ public class Advertisement {
      * @param fileName the name of the file containing the advertisement.
      * @param fileType the type of the file (e.g., JPEG, PNG).
      * @param filePath the path to the file.
+     * This constructor initializes the properties of the advertisement object.
      */
     public Advertisement(int id, String title, String description, String fileName, String fileType, String filePath) {
         this.id = id;
@@ -32,6 +34,7 @@ public class Advertisement {
     /**
      * Gets the ID of the advertisement.
      * @return the ID of the advertisement.
+     * This method returns the unique identifier for the advertisement.
      */
     public int getId() {
         return id;
@@ -40,6 +43,7 @@ public class Advertisement {
     /**
      * Gets the title of the advertisement.
      * @return the title of the advertisement.
+     * This method returns the title of the advertisement.
      */
     public String getTitle() {
         return title;
@@ -48,6 +52,7 @@ public class Advertisement {
     /**
      * Gets the description of the advertisement.
      * @return the description of the advertisement.
+     * This method returns the description of the advertisement.
      */
     public String getDescription() {
         return description;
@@ -56,6 +61,7 @@ public class Advertisement {
     /**
      * Gets the file name of the advertisement.
      * @return the file name of the advertisement.
+     * This method returns the name of the file containing the advertisement.
      */
     public String getFileName() {
         return fileName;
@@ -64,6 +70,7 @@ public class Advertisement {
     /**
      * Gets the file type of the advertisement.
      * @return the file type of the advertisement.
+     * This method returns the type of the file containing the advertisement (e.g., JPEG, PNG).
      */
     public String getFileType() {
         return fileType;
@@ -72,6 +79,7 @@ public class Advertisement {
     /**
      * Gets the file path of the advertisement.
      * @return the file path of the advertisement.
+     * This method returns the path to the file containing the advertisement.
      */
     public String getFilePath() {
         return filePath;
@@ -80,6 +88,7 @@ public class Advertisement {
     /**
      * Sets the ID of the advertisement.
      * @param id the new ID of the advertisement.
+     * This method allows updating the unique identifier of the advertisement.
      */
     public void setId(int id) {
         this.id = id;
@@ -88,6 +97,7 @@ public class Advertisement {
     /**
      * Sets the title of the advertisement.
      * @param title the new title of the advertisement.
+     * This method allows updating the title of the advertisement.
      */
     public void setTitle(String title) {
         this.title = title;
@@ -96,6 +106,7 @@ public class Advertisement {
     /**
      * Sets the description of the advertisement.
      * @param description the new description of the advertisement.
+     * This method allows updating the description of the advertisement.
      */
     public void setDescription(String description) {
         this.description = description;
@@ -104,6 +115,7 @@ public class Advertisement {
     /**
      * Sets the file name of the advertisement.
      * @param fileName the new file name of the advertisement.
+     * This method allows updating the name of the file containing the advertisement.
      */
     public void setFileName(String fileName) {
         this.fileName = fileName;
@@ -112,6 +124,7 @@ public class Advertisement {
     /**
      * Sets the file type of the advertisement.
      * @param fileType the new file type of the advertisement.
+     * This method allows updating the type of the file containing the advertisement.
      */
     public void setFileType(String fileType) {
         this.fileType = fileType;
@@ -120,9 +133,9 @@ public class Advertisement {
     /**
      * Sets the file path of the advertisement.
      * @param filePath the new file path of the advertisement.
+     * This method allows updating the path to the file containing the advertisement.
      */
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
 }
-
