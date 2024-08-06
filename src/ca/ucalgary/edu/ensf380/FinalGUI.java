@@ -3,74 +3,69 @@ package ca.ucalgary.edu.ensf380;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import javax.imageio.ImageIO;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import javax.imageio.ImageIO;
 
 public class FinalGUI {
-    private static final String TARGET_TRAIN = "1"; // or whichever value you need
+    private static final String TARGET_TRAIN = "1";
     private static TrainStationManager stationManager;
 
     public static void main(String[] args) {
-        // Run the simulator
         startSimulator();
 
-        // Initialize and start the GUI
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Final GUI");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(1200, 800);
             frame.setLayout(new BorderLayout());
 
-            // Main panels
             JPanel topPanel = new JPanel(new GridLayout(1, 2));
             JPanel middlePanel = new JPanel(new BorderLayout());
             JPanel bottomPanel = new JPanel(new BorderLayout());
 
-            // Add the top and bottom panels to the frame
             frame.add(topPanel, BorderLayout.NORTH);
             frame.add(middlePanel, BorderLayout.CENTER);
             frame.add(bottomPanel, BorderLayout.SOUTH);
 
-            // Left side of top panel (Map and Ads)
             JPanel adsMapPanel = new JPanel(new BorderLayout());
             JLabel adLabel = new JLabel("", SwingConstants.CENTER);
             adLabel.setFont(new Font("Serif", Font.BOLD, 24));
             adsMapPanel.add(adLabel, BorderLayout.NORTH);
-
             JLabel mapLabel = new JLabel("", SwingConstants.CENTER);
             adsMapPanel.add(mapLabel, BorderLayout.CENTER);
             topPanel.add(adsMapPanel);
 
-            // Right side of top panel (Time and Weather)
             JPanel weatherTimePanel = new JPanel(new GridLayout(2, 1));
             JLabel timeLabel = new JLabel("Loading time...", SwingConstants.CENTER);
             timeLabel.setFont(new Font("Serif", Font.BOLD, 24));
             weatherTimePanel.add(timeLabel);
-
             JLabel weatherLabel = new JLabel("Loading weather...", SwingConstants.CENTER);
             weatherLabel.setFont(new Font("Serif", Font.BOLD, 18));
             weatherTimePanel.add(weatherLabel);
             topPanel.add(weatherTimePanel);
 
-            // Middle panel (News)
             JPanel newsPanel = new JPanel(new BorderLayout());
             JLabel newsLabel = new JLabel("Loading news...", SwingConstants.CENTER);
             newsLabel.setFont(new Font("Serif", Font.PLAIN, 16));
             newsPanel.add(newsLabel, BorderLayout.CENTER);
             middlePanel.add(newsPanel);
 
-            // Bottom panel (Train Info)
             JPanel trainInfoPanel = new JPanel(new GridLayout(1, 1));
             JLabel trainInfoLabel = new JLabel("Loading train data...", SwingConstants.CENTER);
             trainInfoLabel.setFont(new Font("Serif", Font.PLAIN, 18));
             trainInfoPanel.add(trainInfoLabel);
             bottomPanel.add(trainInfoPanel, BorderLayout.NORTH);
 
-            // Announcement section under the train information
             JPanel announcementPanel = new JPanel(new BorderLayout());
             JLabel announcementLabel = new JLabel("Next Stop: Loading...", SwingConstants.CENTER);
             announcementLabel.setFont(new Font("Serif", Font.BOLD, 18));
@@ -79,10 +74,46 @@ public class FinalGUI {
 
             frame.setVisible(true);
 
-            // Start fetching data
             updateTime(timeLabel);
+            updateWeather(weatherLabel);
             startAdDisplay(adLabel, mapLabel, trainInfoLabel, announcementLabel);
         });
+    }
+
+    private static void updateWeather(JLabel weatherLabel) {
+        Timer weatherTimer = new Timer();
+        weatherTimer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                String weatherData = fetchWeatherData("Calgary");
+                SwingUtilities.invokeLater(() -> weatherLabel.setText("<html>" + weatherData.replace("\n", "<br>") + "</html>"));
+            }
+        }, 0, 3600000); // Refresh every hour
+    }
+
+    private static String fetchWeatherData(String location) {
+        try {
+            String formatString = "Weather: %C | Temperature: %t | Wind: %w | Humidity: %h | Precipitation: %p | Pressure: %P";
+            String encodedFormat = URLEncoder.encode(formatString, StandardCharsets.UTF_8.toString());
+            URL url = new URL("https://wttr.in/" + location + "?format=" + encodedFormat);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            HttpURLConnection.setFollowRedirects(true);
+
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line).append("\n");
+                }
+            } finally {
+                connection.disconnect();
+            }
+            return response.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Failed to fetch weather data. Error: " + e.getMessage();
+        }
     }
 
     private static void startSimulator() {
@@ -107,8 +138,7 @@ public class FinalGUI {
 
     private static void startAdDisplay(JLabel adLabel, JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         stationManager = new TrainStationManager();
-        CityHallAds cityHallAds = new CityHallAds();
-        List<Advertisement> ads = cityHallAds.fetchAdvertisements();
+        List<Advertisement> ads = CityHallAds.fetchAdvertisements();
 
         Timer adTimer = new Timer();
         adTimer.scheduleAtFixedRate(new TimerTask() {
@@ -131,25 +161,38 @@ public class FinalGUI {
     }
 
     private static void displayAdvertisement(JLabel label, Advertisement ad) {
-        String filePath = ad.getFilePath();
-        String fileType = ad.getFileType().toUpperCase();
+        String adsFolderPath = "C:/Users/saimk/OneDrive/Desktop/SubwayScreen/src/ca/ucalgary/edu/ensf380/Ads";
+        File adsFolder = new File(adsFolderPath);
 
-        switch (fileType) {
-            case "JPEG":
-            case "JPG":
-            case "PNG":
-            case "BMP":
-                try {
-                    BufferedImage img = ImageIO.read(new File(filePath));
-                    label.setIcon(new ImageIcon(img));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    label.setText("Failed to load advertisement image.");
-                }
-                break;
-            default:
-                label.setText("Unsupported media type: " + fileType);
-                break;
+        if (!adsFolder.exists() || !adsFolder.isDirectory()) {
+            label.setText("Ads folder not found: " + adsFolderPath);
+            return;
+        }
+
+        File[] adFiles = adsFolder.listFiles((dir, name) -> {
+            String lowerName = name.toLowerCase();
+            return lowerName.endsWith(".jpeg") || lowerName.endsWith(".jpg") || lowerName.endsWith(".png") || lowerName.endsWith(".bmp");
+        });
+
+        if (adFiles == null || adFiles.length == 0) {
+            label.setText("No advertisement images found in: " + adsFolderPath);
+            return;
+        }
+
+        // Randomly select an advertisement image from the folder
+        File file = adFiles[(int) (Math.random() * adFiles.length)];
+
+        try {
+            BufferedImage img = ImageIO.read(file);
+            if (img != null) {
+                label.setIcon(new ImageIcon(img));
+                label.setText(""); // Clear any previous error message
+            } else {
+                label.setText("Unsupported or corrupted image file: " + file.getPath());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            label.setText("Failed to load advertisement image.");
         }
     }
 
@@ -169,12 +212,12 @@ public class FinalGUI {
         for (TrainStationManager.TrainData data : stationManager.getAllTrainData()) {
             int x = (int) data.getStation().getX();
             int y = (int) data.getStation().getY();
-            g2d.fillOval(x, y, 10, 10); // Draw grey dot for each train
+            g2d.fillOval(x, y, 10, 10);
 
             if (TARGET_TRAIN.equals(data.getTrainNumber())) {
-                g2d.setColor(Color.GREEN); // Green dot for target train
+                g2d.setColor(Color.GREEN);
                 g2d.fillOval(x, y, 10, 10);
-                g2d.setColor(Color.GRAY); // Reset color for other trains
+                g2d.setColor(Color.GRAY);
             }
         }
 

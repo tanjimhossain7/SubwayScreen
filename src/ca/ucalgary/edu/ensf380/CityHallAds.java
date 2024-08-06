@@ -1,5 +1,7 @@
 package ca.ucalgary.edu.ensf380;
 
+import javax.swing.*;
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -7,14 +9,21 @@ import java.util.List;
 public class CityHallAds {
     private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
 
-    public void initializeDatabase() {
+    public static void main(String[] args) {
+        initializeDatabase();
+        clearExistingData();
+        insertAdsFromFolder();
+    }
+
+    private static void initializeDatabase() {
         String createAdvertisementsTable = "CREATE TABLE IF NOT EXISTS Advertisements (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "title TEXT NOT NULL," +
                 "description TEXT," +
                 "media_id INTEGER," +
-                "display_order INTEGER)";
-
+                "display_order INTEGER," +
+                "FOREIGN KEY (media_id) REFERENCES MediaFiles(id))";
+        
         String createMediaFilesTable = "CREATE TABLE IF NOT EXISTS MediaFiles (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "file_name TEXT NOT NULL," +
@@ -23,58 +32,99 @@ public class CityHallAds {
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement()) {
-
+            
             stmt.execute(createAdvertisementsTable);
             stmt.execute(createMediaFilesTable);
             System.out.println("Database initialized successfully.");
-
+            
         } catch (SQLException e) {
             System.out.println("Database initialization failed!");
             e.printStackTrace();
         }
     }
 
-    public void insertSampleData() {
+    private static void clearExistingData() {
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM Advertisements");
+            stmt.execute("DELETE FROM MediaFiles");
+            stmt.execute("DELETE FROM sqlite_sequence WHERE name='Advertisements' OR name='MediaFiles'");
+            System.out.println("Existing data cleared successfully.");
+        } catch (SQLException e) {
+            System.out.println("Failed to clear existing data!");
+            e.printStackTrace();
+        }
+    }
+
+    private static void insertAdsFromFolder() {
         String insertAdvertisement = "INSERT INTO Advertisements (title, description, media_id, display_order) VALUES (?, ?, ?, ?)";
         String insertMediaFile = "INSERT INTO MediaFiles (file_name, file_type, file_path) VALUES (?, ?, ?)";
+
+        File adsFolder = new File("C:/Users/saimk/OneDrive/Desktop/SubwayScreen/src/ca/ucalgary/edu/ensf380/Ads");
+        if (!adsFolder.exists() || !adsFolder.isDirectory()) {
+            System.out.println("Ads folder not found.");
+            return;
+        }
+
+        File[] adFiles = adsFolder.listFiles((dir, name) -> {
+            String lowerName = name.toLowerCase();
+            return lowerName.endsWith(".png") || lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".bmp");
+        });
+
+        if (adFiles == null || adFiles.length == 0) {
+            System.out.println("No advertisement files found in the Ads folder.");
+            return;
+        }
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
              PreparedStatement adStmt = conn.prepareStatement(insertAdvertisement);
              PreparedStatement mediaStmt = conn.prepareStatement(insertMediaFile)) {
 
-            // Insert a sample media file
-            mediaStmt.setString(1, "sample_ad.jpg");
-            mediaStmt.setString(2, "JPEG");
-            mediaStmt.setString(3, "path/to/sample_ad.jpg");
-            mediaStmt.executeUpdate();
+            for (int i = 0; i < adFiles.length; i++) {
+                File adFile = adFiles[i];
+                String fileName = adFile.getName();
+                String fileType = getFileExtension(fileName).toUpperCase();
+                String filePath = adFile.getAbsolutePath();
 
-            // Insert a sample advertisement
-            adStmt.setString(1, "Sample Ad");
-            adStmt.setString(2, "This is a sample advertisement");
-            adStmt.setInt(3, 1); // Assuming this is the ID of the media file we just inserted
-            adStmt.setInt(4, 1);
-            adStmt.executeUpdate();
+                // Insert media file
+                mediaStmt.setString(1, fileName);
+                mediaStmt.setString(2, fileType);
+                mediaStmt.setString(3, filePath);
+                mediaStmt.executeUpdate();
 
-            System.out.println("Sample data inserted successfully.");
+                // Insert advertisement
+                adStmt.setString(1, "Ad " + (i + 1));
+                adStmt.setString(2, "Description for " + fileName);
+                adStmt.setInt(3, i + 1); // Assuming this is the ID of the media file we just inserted
+                adStmt.setInt(4, i + 1);
+                adStmt.executeUpdate();
+            }
+
+            System.out.println("Ads from folder inserted successfully.");
 
         } catch (SQLException e) {
-            System.out.println("Failed to insert sample data!");
+            System.out.println("Failed to insert ads from folder!");
             e.printStackTrace();
         }
     }
 
-    public List<Advertisement> fetchAdvertisements() {
+    private static String getFileExtension(String fileName) {
+        int dotIndex = fileName.lastIndexOf('.');
+        return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
+    }
+
+    public static List<Advertisement> fetchAdvertisements() {
         List<Advertisement> ads = new ArrayList<>();
         try {
             // Load the SQLite JDBC driver
             Class.forName("org.sqlite.JDBC");
             System.out.println("SQLite JDBC Driver Registered!");
-
+            
             try (Connection conn = DriverManager.getConnection(DB_URL);
                  Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery("SELECT a.id, a.title, a.description, m.file_name, m.file_type, m.file_path " +
                          "FROM Advertisements a JOIN MediaFiles m ON a.media_id = m.id ORDER BY a.display_order")) {
-
+                
                 System.out.println("Database connection established");
                 while (rs.next()) {
                     Advertisement ad = new Advertisement(
@@ -102,5 +152,38 @@ public class CityHallAds {
         System.out.println("Total advertisements fetched: " + ads.size());
         return ads;
     }
-}
 
+    public static void displayAdvertisement(JLabel label, Advertisement ad) {
+        String filePath = ad.getFilePath();
+        String fileType = ad.getFileType();
+        switch (fileType.toUpperCase()) {
+            case "JPEG":
+            case "JPG":
+            case "PNG":
+            case "BMP":
+                label.setIcon(new ImageIcon(filePath));
+                break;
+            case "PDF":
+                // Handle PDF display
+                break;
+            case "MPG":
+                // Handle MPG display
+                break;
+        }
+    }
+
+    public static List<File> getMapImages() {
+        List<File> mapImages = new ArrayList<>();
+        File mapFolder = new File("Map");
+        if (mapFolder.exists() && mapFolder.isDirectory()) {
+            File[] files = mapFolder.listFiles((dir, name) -> name.toLowerCase().endsWith(".png"));
+            if (files != null) {
+                for (File file : files) {
+                    mapImages.add(file);
+                }
+            }
+        }
+        System.out.println("Found " + mapImages.size() + " map images");
+        return mapImages;
+    }
+}
