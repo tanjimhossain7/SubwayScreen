@@ -7,8 +7,8 @@ import java.util.*;
 public class TrainStationManager {
     private final Map<String, TrainData> trainDataMap = new HashMap<>();
     private final Map<String, Station> stations = new HashMap<>();
-    private final String outputDirectory = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\out";
-    private final String subwayFilePath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Map.csv";
+    private final String outputDirectory = "D:\\SubwayScreen\\out";
+    private final String subwayFilePath = "D:\\Map.csv";
 
     public TrainStationManager() {
         loadStationData();

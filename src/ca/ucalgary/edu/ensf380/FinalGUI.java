@@ -118,7 +118,7 @@ public class FinalGUI {
 
     private static void startSimulator() {
         try {
-            ProcessBuilder pb = new ProcessBuilder("java", "-jar", "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\exe\\SubwaySimulator.jar");
+            ProcessBuilder pb = new ProcessBuilder("java", "-jar", "D:\\SubwayScreen\\exe\\SubwaySimulator.jar");
             pb.start();
         } catch (IOException e) {
             e.printStackTrace();
@@ -199,7 +199,7 @@ public class FinalGUI {
     private static void displayMapAndTrainInfo(JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         BufferedImage mapImage;
         try {
-            mapImage = ImageIO.read(new File("C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Trains.png"));
+            mapImage = ImageIO.read(new File("D:\\Map.csv"));
         } catch (IOException e) {
             e.printStackTrace();
             mapLabel.setText("Failed to load map image.");
