@@ -1,4 +1,4 @@
-package cityhallads;
+package ca.ucalgary.edu.ensf380;
 
 import javax.swing.*;
 import java.io.File;
