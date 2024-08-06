@@ -1,10 +1,15 @@
 package cityhallads;
 
-import javax.swing.*;
-import java.io.File;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
+import java.io.File;
 
 public class CityHallAds {
     private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
@@ -13,6 +18,37 @@ public class CityHallAds {
         initializeDatabase();
         clearExistingData();
         insertAdsFromFolder();
+        
+        List<Advertisement> ads = fetchAdvertisements();
+        
+        if (ads.isEmpty()) {
+            System.out.println("No advertisements found in the database.");
+            return;
+        }
+
+        JFrame frame = new JFrame("City Hall Advertisements");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 600);
+
+        JPanel panel = new JPanel();
+        JLabel label = new JLabel();
+        panel.add(label);
+        frame.add(panel);
+        frame.setVisible(true);
+
+        int index = 0;
+        while (true) {
+            try {
+                Advertisement ad = ads.get(index);
+                displayAdvertisement(label, ad);
+                Thread.sleep(10000); // Show each ad for 10 seconds
+                displayMap(label);
+                Thread.sleep(5000); // Show map for 5 seconds
+                index = (index + 1) % ads.size();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private static void initializeDatabase() {
@@ -60,7 +96,7 @@ public class CityHallAds {
         String insertAdvertisement = "INSERT INTO Advertisements (title, description, media_id, display_order) VALUES (?, ?, ?, ?)";
         String insertMediaFile = "INSERT INTO MediaFiles (file_name, file_type, file_path) VALUES (?, ?, ?)";
 
-        File adsFolder = new File("C:/Users/saimk/OneDrive/Desktop/SubwayScreen/src/ca/ucalgary/edu/ensf380/Ads");
+        File adsFolder = new File("Ads");
         if (!adsFolder.exists() || !adsFolder.isDirectory()) {
             System.out.println("Ads folder not found.");
             return;
@@ -113,7 +149,7 @@ public class CityHallAds {
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 
-    public static List<Advertisement> fetchAdvertisements() {
+    private static List<Advertisement> fetchAdvertisements() {
         List<Advertisement> ads = new ArrayList<>();
         try {
             // Load the SQLite JDBC driver
@@ -152,8 +188,8 @@ public class CityHallAds {
         System.out.println("Total advertisements fetched: " + ads.size());
         return ads;
     }
-
-    public static void displayAdvertisement(JLabel label, Advertisement ad) {
+    
+    private static void displayAdvertisement(JLabel label, Advertisement ad) {
         String filePath = ad.getFilePath();
         String fileType = ad.getFileType();
         switch (fileType.toUpperCase()) {
@@ -170,9 +206,22 @@ public class CityHallAds {
                 // Handle MPG display
                 break;
         }
+      }
+
+    private static void displayMap(JLabel label) {
+        List<File> mapImages = getMapImages();
+        if (!mapImages.isEmpty()) {
+            // Randomly select an image from the list
+            File randomImage = mapImages.get((int) (Math.random() * mapImages.size()));
+            label.setIcon(new ImageIcon(randomImage.getPath()));
+            label.setText("<html><h1>Train Positions</h1></html>");
+        } else {
+            label.setIcon(null);
+            label.setText("<html><h1>Train Positions</h1><p>No map images found</p></html>");
+        }
     }
 
-    public static List<File> getMapImages() {
+    private static List<File> getMapImages() {
         List<File> mapImages = new ArrayList<>();
         File mapFolder = new File("Map");
         if (mapFolder.exists() && mapFolder.isDirectory()) {
@@ -187,4 +236,3 @@ public class CityHallAds {
         return mapImages;
     }
 }
-
