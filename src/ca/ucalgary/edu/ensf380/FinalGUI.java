@@ -16,10 +16,17 @@ import java.util.Timer;
 import java.util.TimerTask;
 import javax.imageio.ImageIO;
 
+/**
+ * FinalGUI is the main class for displaying subway information, including advertisements, weather, and train status.
+ */
 public class FinalGUI {
     private static final String TARGET_TRAIN = "1";
     private static TrainStationManager stationManager;
 
+    /**
+     * The main method to start the GUI and simulator.
+     * @param args command-line arguments.
+     */
     public static void main(String[] args) {
         startSimulator();
 
@@ -80,6 +87,10 @@ public class FinalGUI {
         });
     }
 
+    /**
+     * Updates the weather information on the provided label at regular intervals.
+     * @param weatherLabel the JLabel where weather information will be displayed.
+     */
     private static void updateWeather(JLabel weatherLabel) {
         Timer weatherTimer = new Timer();
         weatherTimer.scheduleAtFixedRate(new TimerTask() {
@@ -91,6 +102,11 @@ public class FinalGUI {
         }, 0, 3600000); // Refresh every hour
     }
 
+    /**
+     * Fetches weather data for the specified location.
+     * @param location the location to fetch weather data for.
+     * @return the weather data as a formatted string.
+     */
     private static String fetchWeatherData(String location) {
         try {
             String formatString = "Weather: %C | Temperature: %t | Wind: %w | Humidity: %h | Precipitation: %p | Pressure: %P";
@@ -116,6 +132,9 @@ public class FinalGUI {
         }
     }
 
+    /**
+     * Starts the subway simulator.
+     */
     private static void startSimulator() {
         try {
             ProcessBuilder pb = new ProcessBuilder("java", "-jar", "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\exe\\SubwaySimulator.jar");
@@ -125,6 +144,10 @@ public class FinalGUI {
         }
     }
 
+    /**
+     * Updates the time displayed on the provided label at regular intervals.
+     * @param timeLabel the JLabel where the current time will be displayed.
+     */
     private static void updateTime(JLabel timeLabel) {
         Timer timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -136,6 +159,13 @@ public class FinalGUI {
         }, 0, 1000); // Update every second
     }
 
+    /**
+     * Starts the advertisement display and alternates between displaying ads and maps.
+     * @param adLabel the JLabel where ads will be displayed.
+     * @param mapLabel the JLabel where maps will be displayed.
+     * @param trainInfoLabel the JLabel where train information will be displayed.
+     * @param announcementLabel the JLabel where announcements will be displayed.
+     */
     private static void startAdDisplay(JLabel adLabel, JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         stationManager = new TrainStationManager();
         List<Advertisement> ads = CityHallAds.fetchAdvertisements();
@@ -160,6 +190,11 @@ public class FinalGUI {
         }, 0, 5000); // Switch between ad and map every 5 seconds
     }
 
+    /**
+     * Displays a randomly selected advertisement from the Ads folder.
+     * @param label the JLabel where the advertisement will be displayed.
+     * @param ad the Advertisement object containing details about the ad.
+     */
     private static void displayAdvertisement(JLabel label, Advertisement ad) {
         String adsFolderPath = "C:/Users/saimk/OneDrive/Desktop/SubwayScreen/src/ca/ucalgary/edu/ensf380/Ads";
         File adsFolder = new File(adsFolderPath);
@@ -196,6 +231,12 @@ public class FinalGUI {
         }
     }
 
+    /**
+     * Displays the map and train information on the provided labels.
+     * @param mapLabel the JLabel where the map will be displayed.
+     * @param trainInfoLabel the JLabel where train information will be displayed.
+     * @param announcementLabel the JLabel where announcements will be displayed.
+     */
     private static void displayMapAndTrainInfo(JLabel mapLabel, JLabel trainInfoLabel, JLabel announcementLabel) {
         BufferedImage mapImage;
         try {
@@ -240,6 +281,11 @@ public class FinalGUI {
         }
     }
 
+    /**
+     * Returns the hex color code for the specified line color.
+     * @param lineColor the color code of the line.
+     * @return the hex color code as a string.
+     */
     private static String getLineColorHex(String lineColor) {
         switch (lineColor) {
             case "R":
@@ -253,3 +299,4 @@ public class FinalGUI {
         }
     }
 }
+

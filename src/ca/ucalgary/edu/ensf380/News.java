@@ -1,4 +1,4 @@
-package Newsapp;
+package ca.ucalgary.edu.ensf380;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -9,10 +9,19 @@ import java.nio.charset.StandardCharsets;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+/**
+ * The News class provides methods to fetch news articles from an online API.
+ */
 public class News {
     private static final String API_KEY = "3BbUZoh-7fAr5m3wSxWbtRB-2yP6mVUD2DptrUWXC2FQcrWV";
     private static final String BASE_URL = "https://api.currentsapi.services/v1/search";
 
+    /**
+     * Fetches news articles based on the specified query.
+     * @param query the search query for fetching news.
+     * @return an array of news articles in string format.
+     * @throws Exception if an error occurs while fetching the news.
+     */
     public static String[] fetchNews(String query) throws Exception {
         System.out.println("Fetching news for query: " + query);
 

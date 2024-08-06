@@ -4,17 +4,26 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
+/**
+ * TrainStationManager manages the data related to train stations and trains, including real-time updates.
+ */
 public class TrainStationManager {
     private final Map<String, TrainData> trainDataMap = new HashMap<>();
     private final Map<String, Station> stations = new HashMap<>();
     private final String outputDirectory = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\out";
     private final String subwayFilePath = "C:\\Users\\saimk\\OneDrive\\Desktop\\SubwayScreen\\src\\ca\\ucalgary\\edu\\ensf380\\Map\\Map.csv";
 
+    /**
+     * Constructs a TrainStationManager and starts monitoring output files for updates.
+     */
     public TrainStationManager() {
         loadStationData();
         monitorOutputFiles();
     }
 
+    /**
+     * Loads station data from the specified CSV file.
+     */
     private void loadStationData() {
         try (BufferedReader br = new BufferedReader(new FileReader(subwayFilePath))) {
             String line;
@@ -42,6 +51,9 @@ public class TrainStationManager {
         }
     }
 
+    /**
+     * Monitors the output directory for new files and processes them for train data updates.
+     */
     private void monitorOutputFiles() {
         Runnable task = () -> {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(outputDirectory), "*.csv")) {
@@ -68,6 +80,10 @@ public class TrainStationManager {
         }, 0, 15000);
     }
 
+    /**
+     * Updates the train data based on the information in the specified file.
+     * @param filePath the path to the file containing train data updates.
+     */
     private void updateTrainData(Path filePath) {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath.toFile()))) {
             String line;
@@ -95,6 +111,9 @@ public class TrainStationManager {
         }
     }
 
+    /**
+     * Deletes all output files in the monitored directory.
+     */
     private void deleteOutputFiles() {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(outputDirectory), "*.csv")) {
             for (Path entry : stream) {
@@ -105,14 +124,26 @@ public class TrainStationManager {
         }
     }
 
+    /**
+     * Gets the train data for a specific train number.
+     * @param trainNumber the train number to look up.
+     * @return the TrainData object associated with the train number.
+     */
     public TrainData getTrainData(String trainNumber) {
         return trainDataMap.get(trainNumber);
     }
 
+    /**
+     * Gets all train data currently loaded.
+     * @return a collection of TrainData objects.
+     */
     public Collection<TrainData> getAllTrainData() {
         return trainDataMap.values();
     }
 
+    /**
+     * The TrainData class represents the data associated with a train, including its current station and next stops.
+     */
     public static class TrainData {
         private final String trainNumber;
         private final Station station;
@@ -121,6 +152,14 @@ public class TrainStationManager {
         private final String lineColor;
         private List<String> nextStations;
 
+        /**
+         * Constructs a TrainData object with the specified parameters.
+         * @param trainNumber the train number.
+         * @param station the current station of the train.
+         * @param direction the direction the train is traveling.
+         * @param destination the final destination of the train.
+         * @param lineColor the color code of the train line.
+         */
         public TrainData(String trainNumber, Station station, String direction, String destination, String lineColor) {
             this.trainNumber = trainNumber;
             this.station = station;
@@ -130,6 +169,11 @@ public class TrainStationManager {
             this.nextStations = new ArrayList<>();
         }
 
+        /**
+         * Updates the list of next stations for the train based on its current direction.
+         * @param stations a map of all stations.
+         * @param direction the direction the train is traveling.
+         */
         public void updateNextStations(Map<String, Station> stations, String direction) {
             List<Station> allStations = new ArrayList<>();
             for (Station st : stations.values()) {
@@ -169,31 +213,58 @@ public class TrainStationManager {
             }
         }
 
+        /**
+         * Gets the train number.
+         * @return the train number.
+         */
         public String getTrainNumber() {
             return trainNumber;
         }
 
+        /**
+         * Gets the current station of the train.
+         * @return the current station.
+         */
         public Station getStation() {
             return station;
         }
 
+        /**
+         * Gets the direction the train is traveling.
+         * @return the direction of the train.
+         */
         public String getDirection() {
             return direction;
         }
 
+        /**
+         * Gets the final destination of the train.
+         * @return the destination of the train.
+         */
         public String getDestination() {
             return destination;
         }
 
+        /**
+         * Gets the color code of the train line.
+         * @return the line color.
+         */
         public String getLineColor() {
             return lineColor;
         }
 
+        /**
+         * Gets the list of next stations the train will stop at.
+         * @return a list of next station names.
+         */
         public List<String> getNextStations() {
             return nextStations;
         }
     }
 
+    /**
+     * The Station class represents a subway station, including its location and line information.
+     */
     public static class Station {
         private final String stationCode;
         private final String stationName;
@@ -202,6 +273,15 @@ public class TrainStationManager {
         private final String lineCode;
         private final String commonStations;
 
+        /**
+         * Constructs a Station object with the specified parameters.
+         * @param stationCode the code of the station.
+         * @param stationName the name of the station.
+         * @param x the x-coordinate of the station.
+         * @param y the y-coordinate of the station.
+         * @param lineCode the code of the train line the station is on.
+         * @param commonStations a comma-separated list of common stations.
+         */
         public Station(String stationCode, String stationName, double x, double y, String lineCode, String commonStations) {
             this.stationCode = stationCode;
             this.stationName = stationName;
@@ -211,33 +291,52 @@ public class TrainStationManager {
             this.commonStations = commonStations;
         }
 
+        /**
+         * Gets the station code.
+         * @return the station code.
+         */
         public String getStationCode() {
             return stationCode;
         }
 
+        /**
+         * Gets the station name.
+         * @return the station name.
+         */
         public String getStationName() {
             return stationName;
         }
 
+        /**
+         * Gets the x-coordinate of the station.
+         * @return the x-coordinate of the station.
+         */
         public double getX() {
             return x;
         }
 
+        /**
+         * Gets the y-coordinate of the station.
+         * @return the y-coordinate of the station.
+         */
         public double getY() {
             return y;
         }
 
+        /**
+         * Gets the code of the train line the station is on.
+         * @return the line code.
+         */
         public String getLineCode() {
             return lineCode;
         }
 
+        /**
+         * Gets the common stations associated with this station.
+         * @return a comma-separated list of common stations.
+         */
         public String getCommonStations() {
             return commonStations;
         }
     }
 }
-
-
-
-
-

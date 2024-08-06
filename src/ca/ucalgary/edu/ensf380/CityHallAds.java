@@ -6,15 +6,25 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * CityHallAds handles the initialization, insertion, and retrieval of advertisements from a SQLite database.
+ */
 public class CityHallAds {
     private static final String DB_URL = "jdbc:sqlite:./CityHallAds.db";
 
+    /**
+     * The main method to start the database operations.
+     * @param args command-line arguments.
+     */
     public static void main(String[] args) {
         initializeDatabase();
         clearExistingData();
         insertAdsFromFolder();
     }
 
+    /**
+     * Initializes the database by creating necessary tables if they do not exist.
+     */
     private static void initializeDatabase() {
         String createAdvertisementsTable = "CREATE TABLE IF NOT EXISTS Advertisements (" +
                 "id INTEGER PRIMARY KEY AUTOINCREMENT," +
@@ -43,6 +53,9 @@ public class CityHallAds {
         }
     }
 
+    /**
+     * Clears existing data from the Advertisements and MediaFiles tables.
+     */
     private static void clearExistingData() {
         try (Connection conn = DriverManager.getConnection(DB_URL);
              Statement stmt = conn.createStatement()) {
@@ -56,6 +69,9 @@ public class CityHallAds {
         }
     }
 
+    /**
+     * Inserts advertisements from the specified folder into the database.
+     */
     private static void insertAdsFromFolder() {
         String insertAdvertisement = "INSERT INTO Advertisements (title, description, media_id, display_order) VALUES (?, ?, ?, ?)";
         String insertMediaFile = "INSERT INTO MediaFiles (file_name, file_type, file_path) VALUES (?, ?, ?)";
@@ -108,11 +124,20 @@ public class CityHallAds {
         }
     }
 
+    /**
+     * Returns the file extension of the specified file name.
+     * @param fileName the name of the file.
+     * @return the file extension as a string.
+     */
     private static String getFileExtension(String fileName) {
         int dotIndex = fileName.lastIndexOf('.');
         return (dotIndex == -1) ? "" : fileName.substring(dotIndex + 1);
     }
 
+    /**
+     * Fetches advertisements from the database.
+     * @return a list of advertisements.
+     */
     public static List<Advertisement> fetchAdvertisements() {
         List<Advertisement> ads = new ArrayList<>();
         try {
@@ -153,6 +178,11 @@ public class CityHallAds {
         return ads;
     }
 
+    /**
+     * Displays an advertisement on the provided label.
+     * @param label the JLabel where the advertisement will be displayed.
+     * @param ad the Advertisement object containing details about the ad.
+     */
     public static void displayAdvertisement(JLabel label, Advertisement ad) {
         String filePath = ad.getFilePath();
         String fileType = ad.getFileType();
@@ -172,6 +202,10 @@ public class CityHallAds {
         }
     }
 
+    /**
+     * Retrieves a list of map images from the Map folder.
+     * @return a list of map image files.
+     */
     public static List<File> getMapImages() {
         List<File> mapImages = new ArrayList<>();
         File mapFolder = new File("Map");
@@ -187,4 +221,3 @@ public class CityHallAds {
         return mapImages;
     }
 }
-
